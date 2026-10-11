@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>読み合い剣戟 - システム検証版</title>
+<style>
+:root{
+  --bg:#0d0f14;--panel:#171a22;--panel2:#202532;--line:#353d50;--txt:#f5f7fb;--muted:#aeb6c8;
+  --good:#56d39b;--warn:#f7c65d;--bad:#ff6b75;--accent:#8cb4ff;--accent2:#c295ff;
+}
+*{box-sizing:border-box} body{margin:0;background:radial-gradient(circle at top,#1a2030 0,#0d0f14 48%);color:var(--txt);font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP",sans-serif;min-height:100vh}
+button,input{font:inherit} button{cursor:pointer}
+.wrap{max-width:1100px;margin:auto;padding:18px}.hidden{display:none!important}
+.card{background:rgba(23,26,34,.95);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 12px 32px rgba(0,0,0,.22)}
+h1,h2,h3,p{margin-top:0}.title{display:flex;align-items:center;justify-content:space-between;gap:12px}.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#262d3c;color:#dce5fa;font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stack{display:grid;gap:10px}
+@media(max-width:800px){.grid2,.grid4{grid-template-columns:1fr 1fr}.wrap{padding:10px}}
+@media(max-width:520px){.grid2,.grid4{grid-template-columns:1fr}}
+.btn{border:1px solid var(--line);background:#252b38;color:var(--txt);padding:11px 13px;border-radius:12px;transition:.15s}.btn:hover{transform:translateY(-1px);border-color:#66718b}.btn.primary{background:linear-gradient(135deg,#3d68d8,#754adf);border-color:transparent}.btn.good{background:#173c32;border-color:#2e7c64}.btn.warn{background:#44351b;border-color:#7b622d}.btn.bad{background:#482128;border-color:#80323c}.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}.btn.selected{outline:2px solid var(--accent);background:#293650}
+.small{font-size:12px;color:var(--muted)}.muted{color:var(--muted)}.big{font-size:26px;font-weight:800}.num{font-variant-numeric:tabular-nums}
+.setupRow{display:grid;grid-template-columns:150px 1fr 70px;gap:10px;align-items:center}.alloc{display:flex;gap:6px;align-items:center}.alloc button{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#252b38;color:#fff}.value{min-width:28px;text-align:center;font-weight:800}
+.itemRow{display:grid;grid-template-columns:110px 1fr auto auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px dashed #333a49}.itemRow:last-child{border-bottom:0}.cost{color:var(--warn);font-size:12px}.qty{display:flex;gap:6px;align-items:center}.qty button{width:30px;height:30px;border:1px solid var(--line);border-radius:8px;background:#252b38;color:#fff}
+.arena{display:grid;grid-template-columns:1fr 310px 1fr;gap:14px;align-items:start}.fighter{min-height:340px}.center{display:grid;gap:12px;position:sticky;top:10px}.hpbar,.durbar{height:14px;background:#0a0c11;border-radius:999px;overflow:hidden;border:1px solid #303748}.hpfill,.durfill{height:100%;transition:.3s}.hpfill{background:linear-gradient(90deg,#d9485f,#ff7586)}.durfill{background:linear-gradient(90deg,#4a78c8,#71a4ff)}
+.part{padding:9px;border:1px solid var(--line);border-radius:12px;background:#11151d}.part.weak{border-color:#8f6f25}.part.broken{border-color:#8d3038;background:#25161a}.partHead{display:flex;justify-content:space-between;gap:6px}.barlabel{font-size:12px;color:var(--muted)}
+.phase{font-size:13px;color:#cad3e7}.timer{font-size:38px;font-weight:900;text-align:center}.timer.low{color:var(--bad)}.turn{font-weight:800;text-align:center}.notice{padding:10px;border-radius:12px;background:#11151d;border:1px solid var(--line);font-size:13px}.notice.accent{border-color:#50659b;background:#151d31}.notice.good{border-color:#2d735d;background:#12251f}.notice.bad{border-color:#78313a;background:#28161a}
+.actions{display:grid;gap:10px}.optionGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.sectionTitle{font-size:13px;font-weight:800;color:#d9e0ef;margin-bottom:7px}.tag{display:inline-block;padding:4px 8px;border-radius:999px;background:#293044;font-size:11px;margin:2px}.tag.red{background:#43242a}.tag.green{background:#183a31}.tag.gold{background:#44361e}
+.log{max-height:290px;overflow:auto;display:grid;gap:7px}.logEntry{padding:9px 10px;background:#11151d;border-radius:10px;border-left:3px solid #4a5874;font-size:12px;line-height:1.55}.logEntry.hit{border-color:var(--bad)}.logEntry.block{border-color:var(--accent)}.logEntry.info{border-color:var(--warn)}
+.combo{font-size:12px;color:#ffd16c}.collapse{color:#ff8993;font-weight:800}.weakTxt{color:#f7cf6f;font-weight:700}.footerNote{margin-top:12px;font-size:11px;color:#8f98aa;line-height:1.6}
+.modal{position:fixed;inset:0;background:rgba(4,6,10,.78);display:grid;place-items:center;padding:18px;z-index:50}.modalBox{max-width:560px;width:100%;background:#171a22;border:1px solid #3a4358;border-radius:20px;padding:20px;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #2c3240}.radioRow{display:flex;gap:8px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="title" style="margin-bottom:14px">
+    <div><h1 style="margin-bottom:4px">読み合い剣戟 <span class="pill">システム検証版</span></h1><div class="small">キャラクター演出なし / 対AI / 現行ルール実装</div></div>
+    <button class="btn" id="resetBtn">最初から</button>
+  </div>
+
+  <section id="orderScreen" class="card stack">
+    <h2>1. 先攻・後攻を選択</h2>
+    <p class="muted">AIも希望を選びます。希望が被った場合はコイントス。先攻7枠、後攻8枠です。</p>
+    <div class="radioRow">
+      <button class="btn primary" data-order="first">先攻希望</button>
+      <button class="btn" data-order="second">後攻希望</button>
+    </div>
+    <div id="orderResult" class="notice hidden"></div>
+  </section>
+
+  <section id="buildScreen" class="hidden stack">
+    <div class="grid2">
+      <div class="card stack">
+        <h2>2. HP攻撃力の配分</h2>
+        <div class="small">全モーション初期1。追加5ポイントを自由配分。防御崩壊後のHPダメージに使用します。</div>
+        <div id="attackAlloc"></div>
+        <div class="notice">残りポイント：<b id="atkRemain">5</b></div>
+      </div>
+      <div class="card stack">
+        <h2>3. 耐久値の配分</h2>
+        <div class="small">検証版では総量20。相手には数値非公開。「弱っている」は初期値50%以下・端数切り下げ。</div>
+        <div id="durAlloc"></div>
+        <div class="notice">残り耐久：<b id="durRemain">20</b></div>
+      </div>
+    </div>
+
+    <div class="card stack">
+      <div class="title"><div><h2 style="margin-bottom:4px">4. アイテム編成</h2><div class="small">同一アイテム複数可。忍耐はパッシブ。貫通・強撃・双撃は互いに同時使用不可。</div></div><span class="pill">使用枠 <b id="slotUsed">0</b> / <b id="slotMax">7</b></span></div>
+      <div id="itemBuild"></div>
+      <button id="startBtn" class="btn primary" disabled>対戦開始</button>
+    </div>
+  </section>
+
+  <section id="gameScreen" class="hidden stack">
+    <div class="arena">
+      <div class="card fighter" id="playerPanel"></div>
+      <div class="center">
+        <div class="card">
+          <div class="turn" id="turnLabel"></div>
+          <div class="phase" id="phaseLabel"></div>
+          <div class="timer num" id="timer">--</div>
+          <div id="centerNotice" class="notice accent">構えを選択してください</div>
+        </div>
+        <div class="card actions" id="controlPanel"></div>
+        <div class="card">
+          <div class="sectionTitle">公開戦闘履歴</div>
+          <div class="log" id="battleLog"></div>
+        </div>
+      </div>
+      <div class="card fighter" id="enemyPanel"></div>
+    </div>
+    <div class="footerNote">※ 構えの具体性能と見破り確率は未確定のため、この検証版では仮設定です（5構え / 使用回数ごとに 0→20→40→60→80→100%）。耐久総量20も暫定値です。</div>
+  </section>
+</div>
+
+<div id="modal" class="modal hidden"><div class="modalBox"><div id="modalContent"></div></div></div>
+<script>
+const DIRS=[
+  {id:'top',attack:'縦切り',def:'頭上'},
+  {id:'front',attack:'突き',def:'正面'},
+  {id:'a',attack:'横切りA',def:'横A'},
+  {id:'b',attack:'横切りB',def:'横B'}
+];
+const STANCES=[
+  {id:'high',name:'上段の構え',dirs:['top','a']},
+  {id:'center',name:'正眼の構え',dirs:['top','front']},
+  {id:'left',name:'左流の構え',dirs:['a','b']},
+  {id:'right',name:'右流の構え',dirs:['front','b']},
+  {id:'formless',name:'無形の構え',dirs:['top','front','a','b']}
+];
+const ITEMS={
+  pierce:{name:'貫通',cost:1,type:'mainAtk',desc:'耐久2。ガード貫通。障壁のみ1、障壁+ガード0。崩壊後はHP攻撃力+1。'},
+  heavy:{name:'強撃',cost:1,type:'mainAtk',desc:'耐久3。ガード/障壁で0。ガード成功時は次回同方向攻撃不可。崩壊後はHP攻撃力+2。'},
+  double:{name:'双撃',cost:1,type:'mainAtk',desc:'2回連続攻撃。最大2方向。同方向2回も可。'},
+  heart:{name:'心眼',cost:2,type:'supportAtk',desc:'現在の障壁位置を看破。未設置なら未使用障壁の所持有無を確認。主攻撃アイテムと併用可。'},
+  barrier:{name:'障壁',cost:1,type:'def',desc:'1箇所へ設置。発動まで残る。同時設置1個。通常/強撃0、貫通1。'},
+  insight:{name:'看破',cost:2,type:'def',desc:'攻撃側の入力確定後、攻撃手段・方向を完全に確認。'},
+  patience:{name:'忍耐',cost:2,type:'passive',desc:'常時パッシブ。全方向の「弱っている」表示を各1〜3回の実被弾分遅延。'}
+};
+const detectRates=[0,20,40,60,80,100];
+let G=null, timerInt=null;
+
+function dname(id){return DIRS.find(x=>x.id===id)?.def||id}
+function aname(id){return DIRS.find(x=>x.id===id)?.attack||id}
+function stance(id){return STANCES.find(x=>x.id===id)}
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function copy(o){return JSON.parse(JSON.stringify(o))}
+function itemCount(p,id){return p.items[id]||0}
+function hasUsable(p,id){return itemCount(p,id)>0}
+function spend(p,id){if(id==='patience')return; p.items[id]=Math.max(0,(p.items[id]||0)-1)}
+function log(msg,cls='info'){ if(!G)return; G.log.unshift({msg,cls}); G.log=G.log.slice(0,40); renderLog(); }
+
+function freshPlayer(name){
+  const attack={top:1,front:1,a:1,b:1};
+  const dur={top:5,front:5,a:5,b:5};
+  return {name,hp:10,maxHp:10,attack,dur:copy(dur),durInit:copy(dur),items:{},barrier:null,blockedDir:null,
+    weakPublic:{top:false,front:false,a:false,b:false},collapsePublic:{top:false,front:false,a:false,b:false},
+    patienceDelay:{top:1,front:1,a:1,b:1},patienceHits:{top:0,front:0,a:0,b:0},patienceTriggered:{top:false,front:false,a:false,b:false},
+    stanceUses:{},lastAttackDir:null,lastAttackDamaged:false, selectedStance:null, defenseMode:null};
+}
+
+function initSetup(){
+  document.getElementById('orderScreen').classList.remove('hidden');
+  document.getElementById('buildScreen').classList.add('hidden');
+  document.getElementById('gameScreen').classList.add('hidden');
+  document.getElementById('orderResult').classList.add('hidden');
+}
+
+document.querySelectorAll('[data-order]').forEach(b=>b.onclick=()=>resolveOrder(b.dataset.order));
+document.getElementById('resetBtn').onclick=()=>{clearInterval(timerInt); location.reload()};
+
+function resolveOrder(choice){
+  const aiChoice=Math.random()<.5?'first':'second';
+  let playerFirst;
+  let text='';
+  if(choice!==aiChoice){ playerFirst=choice==='first'; text=`あなた：${choice==='first'?'先攻':'後攻'}希望 / AI：${aiChoice==='first'?'先攻':'後攻'}希望 → 希望どおり決定`; }
+  else{
+    const face=Math.random()<.5;
+    playerFirst=face;
+    text=`希望が重複。名前入りコインを投げました → ${face?'あなた':'AI'}が表 → ${face?'あなたが先攻':'AIが先攻'}`;
+  }
+  G={player:freshPlayer('あなた'),enemy:freshPlayer('AI'),playerFirst,turn:1,attacker:playerFirst?'player':'enemy',phase:'setup',log:[],winner:null};
+  const r=document.getElementById('orderResult'); r.textContent=text; r.classList.remove('hidden');
+  setTimeout(()=>openBuild(),450);
+}
+
+function openBuild(){
+  document.getElementById('orderScreen').classList.add('hidden'); document.getElementById('buildScreen').classList.remove('hidden');
+  document.getElementById('slotMax').textContent=G.playerFirst?7:8;
+  buildAllocUI(); buildItemUI(); validateBuild();
+}
+
+function buildAllocUI(){
+  const atk=document.getElementById('attackAlloc'), dur=document.getElementById('durAlloc'); atk.innerHTML='';dur.innerHTML='';
+  DIRS.forEach(x=>{
+    atk.insertAdjacentHTML('beforeend',`<div class="setupRow"><b>${x.attack}</b><div class="alloc"><button data-a="${x.id}" data-d="-1">−</button><span class="value" id="atk-${x.id}">1</span><button data-a="${x.id}" data-d="1">＋</button></div><span class="small">HP攻撃</span></div>`);
+    dur.insertAdjacentHTML('beforeend',`<div class="setupRow"><b>${x.def}</b><div class="alloc"><button data-u="${x.id}" data-d="-1">−</button><span class="value" id="dur-${x.id}">5</span><button data-u="${x.id}" data-d="1">＋</button></div><span class="small">耐久</span></div>`);
+  });
+  atk.querySelectorAll('button').forEach(b=>b.onclick=()=>changeAtk(b.dataset.a,+b.dataset.d));
+  dur.querySelectorAll('button').forEach(b=>b.onclick=()=>changeDur(b.dataset.u,+b.dataset.d));
+}
+function changeAtk(id,d){
+  const used=Object.values(G.player.attack).reduce((a,b)=>a+b,0)-4;
+  if(d>0&&used>=5)return; if(d<0&&G.player.attack[id]<=1)return;
+  G.player.attack[id]+=d; refreshBuildNumbers();
+}
+function changeDur(id,d){
+  const total=Object.values(G.player.durInit).reduce((a,b)=>a+b,0);
+  if(d>0&&total>=20)return; if(d<0&&G.player.durInit[id]<=1)return;
+  G.player.durInit[id]+=d; G.player.dur[id]=G.player.durInit[id]; refreshBuildNumbers();
+}
+function refreshBuildNumbers(){
+  DIRS.forEach(x=>{document.getElementById('atk-'+x.id).textContent=G.player.attack[x.id];document.getElementById('dur-'+x.id).textContent=G.player.durInit[x.id]});
+  document.getElementById('atkRemain').textContent=5-(Object.values(G.player.attack).reduce((a,b)=>a+b,0)-4);
+  document.getElementById('durRemain').textContent=20-Object.values(G.player.durInit).reduce((a,b)=>a+b,0);
+  validateBuild();
+}
+function buildItemUI(){
+  const el=document.getElementById('itemBuild'); el.innerHTML='';
+  Object.entries(ITEMS).forEach(([id,it])=>{
+    el.insertAdjacentHTML('beforeend',`<div class="itemRow"><b>${it.name}</b><div><div class="small">${it.desc}</div><div class="cost">${it.cost}枠</div></div><div class="qty"><button data-item="${id}" data-d="-1">−</button><b id="qty-${id}">0</b><button data-item="${id}" data-d="1">＋</button></div><span class="small">${it.type==='passive'?'パッシブ':'回'}</span></div>`);
+  });
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>changeItem(b.dataset.item,+b.dataset.d));
+}
+function changeItem(id,d){
+  const max=G.playerFirst?7:8, cur=G.player.items[id]||0;
+  if(id==='patience'&&d>0&&cur>=1)return;
+  if(d<0&&cur<=0)return;
+  const used=itemSlots(G.player), next=used+d*ITEMS[id].cost; if(next<0||next>max)return;
+  G.player.items[id]=cur+d; refreshItems();
+}
+function itemSlots(p){return Object.entries(p.items).reduce((s,[id,q])=>s+ITEMS[id].cost*q,0)}
+function refreshItems(){
+  Object.keys(ITEMS).forEach(id=>{const q=document.getElementById('qty-'+id);if(q)q.textContent=G.player.items[id]||0});
+  document.getElementById('slotUsed').textContent=itemSlots(G.player); validateBuild();
+}
+function validateBuild(){
+  if(!G)return; const atkRem=5-(Object.values(G.player.attack).reduce((a,b)=>a+b,0)-4); const durRem=20-Object.values(G.player.durInit).reduce((a,b)=>a+b,0); const max=G.playerFirst?7:8;
+  document.getElementById('startBtn').disabled=atkRem!==0||durRem!==0||itemSlots(G.player)>max;
+}
+document.getElementById('startBtn').onclick=startGame;
+
+function aiBuild(p,slots){
+  // attack: weighted random 5 points
+  for(let i=0;i<5;i++) p.attack[rand(DIRS).id]++;
+  // durability: 20 total, min 2 each
+  p.durInit={top:2,front:2,a:2,b:2};
+  for(let i=0;i<12;i++) p.durInit[rand(DIRS).id]++;
+  p.dur=copy(p.durInit);
+  // build items with reasonable diversity
+  p.items={pierce:0,heavy:0,double:0,heart:0,barrier:0,insight:0,patience:0};
+  let left=slots;
+  const pool=['barrier','pierce','heavy','double','heart','insight'];
+  if(left>=2&&Math.random()<.45){p.items.patience=1;left-=2}
+  while(left>0){ const candidates=pool.filter(id=>ITEMS[id].cost<=left); const id=rand(candidates); p.items[id]++; left-=ITEMS[id].cost; }
+}
+
+function startGame(){
+  const aiSlots=G.playerFirst?8:7; aiBuild(G.enemy,aiSlots);
+  for(const p of [G.player,G.enemy]){
+    p.dur=copy(p.durInit); p.hp=10; p.barrier=null; p.blockedDir=null; p.weakPublic={top:false,front:false,a:false,b:false}; p.collapsePublic={top:false,front:false,a:false,b:false};
+    p.patienceDelay={top:1+Math.floor(Math.random()*3),front:1+Math.floor(Math.random()*3),a:1+Math.floor(Math.random()*3),b:1+Math.floor(Math.random()*3)}; p.patienceHits={top:0,front:0,a:0,b:0}; p.patienceTriggered={top:false,front:false,a:false,b:false};
+    p.stanceUses={};p.lastAttackDir=null;p.lastAttackDamaged=false;
+  }
+  document.getElementById('buildScreen').classList.add('hidden'); document.getElementById('gameScreen').classList.remove('hidden');
+  log(`対戦開始。${G.playerFirst?'あなた':'AI'}が先攻。`,'info'); beginTurn();
+}
+
+function getAtk(){return G[G.attacker]} function getDef(){return G[G.attacker==='player'?'enemy':'player']}
+function isPlayerAttacking(){return G.attacker==='player'}
+
+function beginTurn(){
+  clearInterval(timerInt); if(G.winner)return;
+  G.phase='stance'; const A=getAtk(),D=getDef(); A.selectedStance=null; D.defenseMode=null;
+  G.turnCtx={atkItem:null,heart:false,defBarrier:false,barrierDir:null,insight:false,attackDirs:[],defDir:null,detect:false,heartInfo:null,attackLocked:false,defLocked:false};
+  renderAll(); renderStanceControls();
+}
+
+function renderStanceControls(){
+  const cp=document.getElementById('controlPanel'); cp.innerHTML='';
+  if(isPlayerAttacking()){
+    cp.innerHTML=`<div><div class="sectionTitle">攻撃構えを選択</div><div class="optionGrid" id="stanceBtns"></div></div>
+    <div><div class="sectionTitle">このターンに使うアイテム</div><div id="atkItemBtns" class="optionGrid"></div></div><button class="btn primary" id="stanceConfirm" disabled>構え・アイテムを確定</button>`;
+    const sb=cp.querySelector('#stanceBtns'); STANCES.forEach(s=>{const valid=s.dirs.filter(d=>d!==G.player.blockedDir); const b=document.createElement('button');b.className='btn';b.disabled=!valid.length;b.innerHTML=`<b>${s.name}</b><div class="small">${valid.map(aname).join(' / ')}</div>`;b.onclick=()=>{G.player.selectedStance=s.id;[...sb.children].forEach(x=>x.classList.remove('selected'));b.classList.add('selected');cp.querySelector('#stanceConfirm').disabled=false};sb.appendChild(b)});
+    const ib=cp.querySelector('#atkItemBtns');
+    ['pierce','heavy','double','heart'].forEach(id=>{if(!hasUsable(G.player,id))return; const b=document.createElement('button');b.className='btn';b.dataset.id=id;b.textContent=`${ITEMS[id].name} ×${itemCount(G.player,id)}`;b.onclick=()=>toggleAttackItem(id,b);ib.appendChild(b)});
+    cp.querySelector('#stanceConfirm').onclick=()=>playerConfirmAttackStance();
+    document.getElementById('centerNotice').textContent='攻撃構えと、このターンに使用するアイテムを決めます。';
+  }else{
+    cp.innerHTML=`<div><div class="sectionTitle">防御の構え</div><div class="optionGrid"><button class="btn" id="readBtn"><b>見極める</b><div class="small">相手の構えを確認して、候補から守る</div></button><button class="btn" id="focusBtn"><b>集中する</b><div class="small">構えを見ず、傾向と感覚から読み反撃する</div></button></div></div>
+    <div><div class="sectionTitle">このターンに使う防御アイテム</div><div id="defItemBtns" class="optionGrid"></div></div><button class="btn primary" id="stanceConfirm" disabled>構え・アイテムを確定</button>`;
+    const choose=(m,b)=>{G.player.defenseMode=m;cp.querySelector('#readBtn').classList.remove('selected');cp.querySelector('#focusBtn').classList.remove('selected');b.classList.add('selected');cp.querySelector('#stanceConfirm').disabled=false};
+    cp.querySelector('#readBtn').onclick=e=>choose('read',e.currentTarget); cp.querySelector('#focusBtn').onclick=e=>choose('focus',e.currentTarget);
+    const ib=cp.querySelector('#defItemBtns');
+    if(hasUsable(G.player,'barrier')&&!G.player.barrier){const b=document.createElement('button');b.className='btn';b.textContent=`障壁 ×${itemCount(G.player,'barrier')}`;b.onclick=()=>openBarrierPicker(b);ib.appendChild(b)}
+    if(hasUsable(G.player,'insight')){const b=document.createElement('button');b.className='btn';b.textContent=`看破 ×${itemCount(G.player,'insight')}`;b.onclick=()=>{G.turnCtx.insight=!G.turnCtx.insight;b.classList.toggle('selected',G.turnCtx.insight)};ib.appendChild(b)}
+    cp.querySelector('#stanceConfirm').onclick=()=>playerConfirmDefenseStance();
+    document.getElementById('centerNotice').textContent='「見極める」か「集中する」を選び、必要なら障壁・看破を宣言します。';
+  }
+}
+
+function toggleAttackItem(id,b){
+  if(id==='heart'){G.turnCtx.heart=!G.turnCtx.heart;b.classList.toggle('selected',G.turnCtx.heart);return}
+  if(G.turnCtx.atkItem===id){G.turnCtx.atkItem=null;b.classList.remove('selected');return}
+  G.turnCtx.atkItem=id; document.querySelectorAll('#atkItemBtns [data-id]').forEach(x=>{if(x.dataset.id!=='heart')x.classList.remove('selected')}); b.classList.add('selected');
+}
+function openBarrierPicker(btn){
+  const m=document.getElementById('modal'),c=document.getElementById('modalContent');
+  c.innerHTML=`<h3>障壁を設置する方向</h3><div class="optionGrid">${DIRS.map(d=>`<button class="btn" data-dir="${d.id}">${d.def}</button>`).join('')}</div><button class="btn" id="cancelModal" style="margin-top:10px">キャンセル</button>`;m.classList.remove('hidden');
+  c.querySelectorAll('[data-dir]').forEach(x=>x.onclick=()=>{G.turnCtx.defBarrier=true;G.turnCtx.barrierDir=x.dataset.dir;btn.classList.add('selected');btn.textContent=`障壁：${dname(x.dataset.dir)}`;m.classList.add('hidden')});c.querySelector('#cancelModal').onclick=()=>m.classList.add('hidden');
+}
+
+function playerConfirmAttackStance(){
+  const A=G.player,D=G.enemy; if(!A.selectedStance)return; A.stanceUses[A.selectedStance]=(A.stanceUses[A.selectedStance]||0)+1;
+  // AI defense stance + item decisions now
+  aiChooseDefenseStance(D,A);
+  if(G.turnCtx.atkItem) spend(A,G.turnCtx.atkItem); if(G.turnCtx.heart) spend(A,'heart');
+  if(G.turnCtx.defBarrier){/* AI only here not player */}
+  preActionEffects(); startActionPhase();
+}
+function playerConfirmDefenseStance(){
+  const D=G.player,A=G.enemy; if(!D.defenseMode)return;
+  // AI chooses attack stance/items
+  aiChooseAttackStance(A,D);
+  if(G.turnCtx.defBarrier){ spend(D,'barrier'); D.barrier=G.turnCtx.barrierDir; log(`${D.name}が障壁を設置した。`,'info'); }
+  if(G.turnCtx.insight) spend(D,'insight');
+  preActionEffects(); startActionPhase();
+}
+
+function aiChooseDefenseStance(D,A){
+  D.defenseMode=Math.random()<.72?'read':'focus';
+  G.turnCtx.insight=hasUsable(D,'insight')&&Math.random()<.16;
+  if(G.turnCtx.insight)spend(D,'insight');
+  if(!D.barrier&&hasUsable(D,'barrier')&&Math.random()<.28){
+    let dirs=DIRS.map(x=>x.id); const broken=dirs.filter(x=>D.dur[x]<=0); G.turnCtx.barrierDir=broken.length?rand(broken):rand(dirs); G.turnCtx.defBarrier=true; spend(D,'barrier'); D.barrier=G.turnCtx.barrierDir; log(`${D.name}が障壁を設置した。`,'info');
+  }
+}
+function aiChooseAttackStance(A,D){
+  const available=STANCES.filter(s=>s.dirs.some(d=>d!==A.blockedDir));
+  // bias stance containing attractive directions
+  const target=aiPreferredDirection(A,D);
+  const candidates=available.filter(s=>s.dirs.includes(target)); A.selectedStance=(candidates.length?rand(candidates):rand(available)).id;
+  A.stanceUses[A.selectedStance]=(A.stanceUses[A.selectedStance]||0)+1;
+  const roll=Math.random(); if(hasUsable(A,'heavy')&&roll<.16)G.turnCtx.atkItem='heavy'; else if(hasUsable(A,'pierce')&&roll<.32)G.turnCtx.atkItem='pierce'; else if(hasUsable(A,'double')&&roll<.43)G.turnCtx.atkItem='double';
+  if(G.turnCtx.atkItem)spend(A,G.turnCtx.atkItem);
+  G.turnCtx.heart=hasUsable(A,'heart')&&Math.random()<.15; if(G.turnCtx.heart)spend(A,'heart');
+}
+function aiPreferredDirection(A,D){
+  const dirs=DIRS.map(x=>x.id).filter(d=>d!==A.blockedDir);
+  dirs.sort((x,y)=>{
+    const sx=(D.dur[x]<=0?A.attack[x]*2: (D.weakPublic[x]?2:0)) + (A.lastAttackDir===x&&A.lastAttackDamaged?1.2:0);
+    const sy=(D.dur[y]<=0?A.attack[y]*2: (D.weakPublic[y]?2:0)) + (A.lastAttackDir===y&&A.lastAttackDamaged?1.2:0);
+    return sy-sx;
+  });
+  return Math.random()<.68?dirs[0]:rand(dirs);
+}
+
+function preActionEffects(){
+  const A=getAtk(),D=getDef();
+  // barrier already placed for player defense; AI barrier placed in AI choice
+  if(G.turnCtx.heart){
+    G.turnCtx.heartInfo=D.barrier?`障壁：${dname(D.barrier)}`:`障壁なし / 未使用障壁：${hasUsable(D,'barrier')?'あり':'なし'}`;
+    log(`${A.name}の心眼 → ${G.turnCtx.heartInfo}`,'info');
+  }
+}
+
+function startActionPhase(){
+  G.phase='action'; const A=getAtk(),D=getDef();
+  renderAll();
+  if(isPlayerAttacking()) renderPlayerAttackAction(); else renderPlayerDefenseAction();
+}
+
+function startCountdown(seconds,onEnd){
+  clearInterval(timerInt); let left=seconds; const el=document.getElementById('timer'); el.textContent=left; el.classList.remove('low');
+  timerInt=setInterval(()=>{left--; el.textContent=left; if(left<=3)el.classList.add('low'); if(left<=0){clearInterval(timerInt);onEnd()}},1000);
+}
+
+function renderPlayerAttackAction(){
+  const A=G.player,D=G.enemy, s=stance(A.selectedStance); const valid=s.dirs.filter(d=>d!==A.blockedDir);
+  const cp=document.getElementById('controlPanel');
+  cp.innerHTML=`<div class="notice"><b>相手：</b>${D.defenseMode==='read'?'見極める':'集中する'}${G.turnCtx.heartInfo?`<br><b>心眼：</b>${G.turnCtx.heartInfo}`:''}</div><div class="sectionTitle">攻撃方向を選択</div><div class="optionGrid" id="dirBtns"></div>`;
+  const db=cp.querySelector('#dirBtns');
+  if(G.turnCtx.atkItem==='double'){
+    let picks=[]; valid.forEach(d=>{const b=document.createElement('button');b.className='btn';b.textContent=aname(d);b.onclick=()=>{if(picks.length>=2)return;picks.push(d);b.classList.add('selected');b.innerHTML=`${aname(d)}<div class="small">${picks.filter(x=>x===d).length}回</div>`;if(picks.length===2){G.turnCtx.attackDirs=picks;G.turnCtx.attackLocked=true;finishAttackInput()}};db.appendChild(b)});
+    const same=document.createElement('div');same.className='small';same.style.gridColumn='1/-1';same.textContent='同じ方向を2回選ぶ場合は同じボタンを2回押してください。';db.appendChild(same);
+  }else{
+    valid.forEach(d=>{const b=document.createElement('button');b.className='btn';b.textContent=aname(d);b.onclick=()=>{G.turnCtx.attackDirs=[d];G.turnCtx.attackLocked=true;finishAttackInput()};db.appendChild(b)});
+  }
+  document.getElementById('centerNotice').textContent=`${s.name}：${valid.map(aname).join(' / ')} から攻撃。`;
+  startCountdown(5,()=>{if(!G.turnCtx.attackLocked){if(G.turnCtx.atkItem==='double'){G.turnCtx.attackDirs=[rand(valid),rand(valid)]}else G.turnCtx.attackDirs=[rand(valid)];G.turnCtx.attackLocked=true;log('攻撃側が時間切れ → 構え候補からランダム選択','info');finishAttackInput()}});
+}
+function finishAttackInput(){
+  clearInterval(timerInt); const A=getAtk(),D=getDef();
+  // detect check
+  const uses=A.stanceUses[A.selectedStance]||1, rate=detectRates[Math.min(uses-1,detectRates.length-1)]; G.turnCtx.detect=Math.random()*100<rate;
+  // AI defense selection after attack locked
+  aiChooseDefenseDirection(D,A);
+  resolveTurn();
+}
+
+function renderPlayerDefenseAction(){
+  const A=G.enemy,D=G.player,s=stance(A.selectedStance); const cp=document.getElementById('controlPanel');
+  let allowed=D.defenseMode==='read'?s.dirs.filter(d=>d!==A.blockedDir):DIRS.map(x=>x.id);
+  cp.innerHTML=`<div class="notice"><b>あなた：</b>${D.defenseMode==='read'?'見極める':'集中する'}<br>${D.defenseMode==='read'?`相手の構え：<b>${s.name}</b>（${s.dirs.filter(d=>d!==A.blockedDir).map(aname).join(' / ')}）`:'相手の構えは確認できません'}</div><div id="intel" class="notice accent">攻撃入力待ち…</div><div class="sectionTitle">${D.defenseMode==='read'?'守る方向':'カウンター方向'}</div><div class="optionGrid" id="defBtns"></div>`;
+  const db=cp.querySelector('#defBtns');
+  allowed.forEach(d=>{const b=document.createElement('button');b.className='btn';b.dataset.dir=d;b.textContent=dname(d);b.disabled=!!G.turnCtx.insight;b.onclick=()=>{G.turnCtx.defDir=d;G.turnCtx.defLocked=true;[...db.children].forEach(x=>x.classList.remove('selected'));b.classList.add('selected')};db.appendChild(b)});
+  document.getElementById('centerNotice').textContent=G.turnCtx.insight?'看破中：相手の攻撃入力が確定するまで防御方向は選べません。':'10秒以内に方向を選択。攻撃方向を見破った場合は途中で情報が更新されます。';
+  // AI attack input delay up to 5 sec, actual 1.2-4.8 sec
+  let aiDelay=1200+Math.random()*3600;
+  setTimeout(()=>{if(G.phase!=='action'||G.attacker!=='enemy')return; aiLockAttack(A,D); onEnemyAttackLocked();},aiDelay);
+  startCountdown(10,()=>{
+    if(!G.turnCtx.defLocked){
+      let auto;
+      if(G.turnCtx.insight&&G.turnCtx.attackDirs.length) auto=G.turnCtx.attackDirs[0];
+      else auto=rand(allowed);
+      G.turnCtx.defDir=auto;G.turnCtx.defLocked=true;log(`防御側が時間切れ → ${G.turnCtx.insight?'看破した1撃目':'候補'}から自動選択：${dname(auto)}`,'info');
+    }
+    if(!G.turnCtx.attackLocked) aiLockAttack(A,D);
+    resolveTurn();
+  });
+}
+function aiLockAttack(A,D){
+  if(G.turnCtx.attackLocked)return; const s=stance(A.selectedStance); const valid=s.dirs.filter(d=>d!==A.blockedDir); let first=aiPreferredDirection(A,D); if(!valid.includes(first))first=rand(valid);
+  G.turnCtx.attackDirs=G.turnCtx.atkItem==='double'?[first,(Math.random()<.55?first:rand(valid))]:[first]; G.turnCtx.attackLocked=true;
+  const uses=A.stanceUses[A.selectedStance]||1, rate=detectRates[Math.min(uses-1,detectRates.length-1)]; G.turnCtx.detect=Math.random()*100<rate;
+}
+function onEnemyAttackLocked(){
+  const intel=document.getElementById('intel'); if(!intel)return; const A=getAtk();
+  let msg='攻撃方向はまだ見破れていません。';
+  if(G.turnCtx.insight){msg=`看破成功：${G.turnCtx.atkItem?ITEMS[G.turnCtx.atkItem].name:'通常攻撃'} / ${G.turnCtx.attackDirs.map(aname).join(' → ')}`; document.querySelectorAll('#defBtns button').forEach(b=>b.disabled=false)}
+  else if(G.turnCtx.detect){msg=`見破った：${G.turnCtx.attackDirs.map(aname).join(' → ')}`;}
+  intel.textContent=msg;
+}
+function aiChooseDefenseDirection(D,A){
+  const s=stance(A.selectedStance); let candidates=D.defenseMode==='read'?s.dirs.filter(d=>d!==A.blockedDir):DIRS.map(x=>x.id);
+  if(G.turnCtx.insight) G.turnCtx.defDir=G.turnCtx.attackDirs[0];
+  else if(G.turnCtx.detect) G.turnCtx.defDir=G.turnCtx.attackDirs[0];
+  else{
+    // tendency based guess
+    const scores=candidates.map(d=>({d,s:(A.lastAttackDir===d?2:0)+(D.dur[d]<=0?1.5:0)+(D.weakPublic[d]?1:0)})).sort((x,y)=>y.s-x.s);
+    G.turnCtx.defDir=Math.random()<.62?scores[0].d:rand(candidates);
+  }
+  G.turnCtx.defLocked=true;
+}
+
+function resolveTurn(){
+  clearInterval(timerInt); if(G.phase!=='action')return; G.phase='resolve'; const A=getAtk(),D=getDef();
+  const mode=D.defenseMode; const defDir=G.turnCtx.defDir; let guardAvailable=mode==='read', counterMode=mode==='focus';
+  let summary=[];
+  for(let i=0;i<G.turnCtx.attackDirs.length;i++){
+    const dir=G.turnCtx.attackDirs[i];
+    const result=resolveHit(A,D,dir,{guardAvailable,counterMode,defDir,index:i});
+    if(result.consumeGuard) guardAvailable=false;
+    summary.push(result.text);
+  }
+  if(A.blockedDir){ log(`${A.name}の「${aname(A.blockedDir)}使用不可」はこの攻撃ターンで解除された。`,'info'); A.blockedDir=null; }
+  log(`${A.name}：${G.turnCtx.attackDirs.map(aname).join(' → ')}${G.turnCtx.atkItem?'＋'+ITEMS[G.turnCtx.atkItem].name:''} / ${summary.join(' / ')}`,summary.some(x=>x.includes('ダメージ'))?'hit':'block');
+  updatePublicStates(D);
+  updatePublicStates(A);
+  renderAll();
+  if(A.hp<=0||D.hp<=0){ endGame(A.hp<=0?D:A); return; }
+  setTimeout(()=>{G.turn++;G.attacker=G.attacker==='player'?'enemy':'player';beginTurn()},1000);
+}
+
+function resolveHit(A,D,dir,ctx){
+  const main=G.turnCtx.atkItem; let base=1;
+  if(main==='pierce')base=2; else if(main==='heavy')base=3; else base=1;
+  const combo=(A.lastAttackDir===dir&&A.lastAttackDamaged)?1:0;
+  let raw=base+combo; let targetBroken=D.dur[dir]<=0;
+  if(targetBroken){raw=A.attack[dir]+combo+(main==='pierce'?1:main==='heavy'?2:0)}
+  let damage=raw, reflected=false, consumeGuard=false, barrierUsed=false;
+  const guarding=ctx.guardAvailable&&ctx.defDir===dir;
+  const countering=ctx.counterMode&&ctx.defDir===dir;
+
+  // Counter first
+  if(countering){
+    reflected=true; damage=0;
+    let refBase;
+    if(A.dur[dir]<=0) refBase=D.attack[dir]+combo+(main==='pierce'?1:main==='heavy'?2:0);
+    else refBase=(main==='pierce'?2:main==='heavy'?3:1)+combo;
+    applyDamage(A,dir,refBase,`カウンター反射`);
+    A.lastAttackDir=dir; A.lastAttackDamaged=false; // incoming did not damage defender
+    return {consumeGuard:false,text:`${dname(dir)}カウンター成功 → ${refBase}反射`};
+  }
+
+  // failed counter adds +1 to incoming hit
+  if(ctx.counterMode && ctx.defDir!==dir) damage+=1;
+
+  // Guard first
+  if(guarding){
+    consumeGuard=true;
+    if(main==='pierce'){
+      // pierce survives guard
+    }else{
+      damage=0;
+      if(main==='heavy') D.blockedDir=dir;
+    }
+  }
+
+  // Barrier second: if guard/counter already reduced the hit to 0, the barrier is not consumed.
+  if(D.barrier===dir && damage>0){
+    barrierUsed=true;
+    if(main==='pierce') damage=Math.max(0, damage-1); else damage=0;
+    D.barrier=null;
+  }
+
+  // Guard + barrier is the complete answer to penetration in the current rules.
+  if(guarding && barrierUsed && main==='pierce') damage=0;
+
+  const dealt=damage>0?damage:0;
+  if(dealt>0) applyDamage(D,dir,dealt,main?ITEMS[main].name:'通常攻撃');
+  A.lastAttackDir=dir; A.lastAttackDamaged=dealt>0;
+  return {consumeGuard,text:dealt>0?`${dname(dir)}へ${dealt}ダメージ${combo?'（COMBO+1）':''}`:`${dname(dir)}は0ダメージ`};
+}
+
+function applyDamage(T,dir,amount,source){
+  if(T.dur[dir]>0){
+    const before=T.dur[dir]; T.dur[dir]=Math.max(0,T.dur[dir]-amount); const actual=before-T.dur[dir];
+    if(actual>0) patienceProgress(T,dir);
+    if(T.dur[dir]===0&&!T.collapsePublic[dir]){T.collapsePublic[dir]=true;log(`${T.name}の${dname(dir)}が防御崩壊！`,'hit')}
+  }else{
+    T.hp=Math.max(0,T.hp-amount);
+  }
+}
+function patienceProgress(T,dir){
+  if(T.dur[dir]<=0)return;
+  const threshold=Math.floor(T.durInit[dir]/2);
+  if(T.dur[dir]<=threshold&&!T.weakPublic[dir]){
+    if(itemCount(T,'patience')>0){
+      // The hit that first reaches the weak range starts the hidden state; it does not consume a delay count.
+      if(!T.patienceTriggered[dir]){T.patienceTriggered[dir]=true;return;}
+      T.patienceHits[dir]++;
+      if(T.patienceHits[dir]>=T.patienceDelay[dir]){T.weakPublic[dir]=true;log(`${T.name}の${dname(dir)}が弱っている。`,'info')}
+    }else{T.weakPublic[dir]=true;log(`${T.name}の${dname(dir)}が弱っている。`,'info')}
+  }
+}
+function updatePublicStates(T){
+  DIRS.forEach(x=>{const d=x.id;if(T.dur[d]<=0)T.collapsePublic[d]=true;else if(!itemCount(T,'patience')&&T.dur[d]<=Math.floor(T.durInit[d]/2))T.weakPublic[d]=true;});
+}
+function endGame(w){G.winner=w.name;renderAll();const m=document.getElementById('modal'),c=document.getElementById('modalContent');c.innerHTML=`<h2>${w.name==='あなた'?'勝利！':'敗北'}</h2><p>${w.name}が相手HPを0にしました。</p><button class="btn primary" onclick="location.reload()">もう一度</button>`;m.classList.remove('hidden')}
+
+function renderAll(){if(!G)return; renderFighter('player',G.player);renderFighter('enemy',G.enemy);document.getElementById('turnLabel').textContent=`TURN ${G.turn}　${G.attacker==='player'?'あなたの攻撃':'AIの攻撃'}`;document.getElementById('phaseLabel').textContent=G.phase==='stance'?'構え選択フェイズ':G.phase==='action'?'行動フェイズ':'結果処理';renderLog()}
+function renderFighter(side,p){
+  const own=side==='player'; const el=document.getElementById(side+'Panel');
+  const hpPct=p.hp/p.maxHp*100;
+  let parts='';
+  DIRS.forEach(x=>{
+    const broken=p.dur[x.id]<=0, weak=p.weakPublic[x.id];
+    let status=broken?'<span class="collapse">防御崩壊</span>':weak?'<span class="weakTxt">弱っている</span>':'<span class="small">安定</span>';
+    if(own) status=`<span class="small">${p.dur[x.id]}/${p.durInit[x.id]}</span>`+(broken?' <span class="collapse">崩壊</span>':weak?' <span class="weakTxt">弱</span>':'');
+    parts+=`<div class="part ${broken?'broken':weak?'weak':''}"><div class="partHead"><b>${x.def}</b>${status}</div>${own?`<div class="durbar"><div class="durfill" style="width:${p.durInit[x.id]?p.dur[x.id]/p.durInit[x.id]*100:0}%"></div></div>`:''}${p.barrier===x.id&&own?'<span class="tag green">障壁</span>':''}${p.blockedDir===x.id&&own?'<span class="tag red">次回攻撃不可</span>':''}</div>`;
+  });
+  const itemTags=own?Object.entries(p.items).filter(([id,q])=>q>0&&id!=='patience').map(([id,q])=>`<span class="tag">${ITEMS[id].name}×${q}</span>`).join(''):'';
+  el.innerHTML=`<div class="title"><div><h2 style="margin-bottom:3px">${p.name}</h2><div class="small">${own?'自分の情報':'公開情報のみ'}</div></div><div class="big num">HP ${p.hp}</div></div><div class="hpbar"><div class="hpfill" style="width:${hpPct}%"></div></div>
+  <div class="sectionTitle" style="margin-top:14px">防御部位</div><div class="stack">${parts}</div>
+  ${own?`<div class="sectionTitle" style="margin-top:14px">HP攻撃力</div><div>${DIRS.map(x=>`<span class="tag gold">${x.attack} ${p.attack[x.id]}</span>`).join('')}</div><div class="sectionTitle" style="margin-top:12px">残りアイテム</div><div>${itemCount(p,'patience')?'<span class="tag green">忍耐 PASSIVE</span>':''}${itemTags||'<span class="small">なし</span>'}</div>`:'<div class="sectionTitle" style="margin-top:14px">推理情報</div><div class="small">HP攻撃力・正確な耐久・残りアイテムは非公開。弱体・崩壊・公開された使用履歴から推測します。</div>'}`;
+}
+function renderLog(){const el=document.getElementById('battleLog');if(!G||!el)return;el.innerHTML=G.log.map(x=>`<div class="logEntry ${x.cls}">${x.msg}</div>`).join('')||'<div class="small">まだ履歴はありません。</div>'}
+
+initSetup();
+</script>
+</body>
+</html>
